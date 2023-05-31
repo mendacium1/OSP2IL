@@ -23,7 +23,9 @@ start:
 ;Interrupt Descriptor Table (IDT) zu laden. Paging soll ebenfalls noch nicht
 ;verwendet werden.
 
-;INSERT CODE HERE
+    mov eax, cr0
+    or al, 1                  ;Setzen des PE (Protected Enable) bit in CR0
+    mov cr0, eax
 
 ;</AUFGABE2>
 
@@ -132,11 +134,50 @@ gdtr:
 gdt:
     dd 0,0                    ;Leerer Descriptor an Position 0
 code equ $-gdt
-    dd 0,0                    ;(Noch) leerer Descriptor an Position 1
+    db 0x00                   ;Base 31:24 = 0
+    db 0xCB                   ;G = Granularity = 1 (in 4KB increments)
+                              ;D/B = Default operation size = 1 (32-bit)
+                              ;L = 64-bit code segment = 0
+                              ;AVL = Available for use by system software = 1
+                              ;(usable by system software)
+                              ;Seg Limit 19:16 = 1011
+    db 0x98                   ;P = Segment present = 1 (is present in memory)
+                              ;DPL = Descriptor priviledge level = 00 (highest)
+                              ;S = Descriptor Type = 1 (code/data)
+                              ;TYPE = 1000 (Execute-Only)
+    db 0x00                   ;Base 23:16 = 0
+    dw 0x0000                   ;Base 15:00 = 0
+    dw 0x00B8                   ;Seg Limit 15:00 = 10111000
 data equ $-gdt
-    dd 0,0                    ;(Noch) leerer Descriptor an Position 2
+    db 0x00                   ;Base 31:24 = 0
+    db 0xCB                   ;G = Granularity = 1 (in 4KB increments)
+                              ;D/B = Default operation size = 1 (32-bit)
+                              ;L = 64-bit code segment = 0
+                              ;AVL = Available for use by system software = 1
+                              ;(usable by system software)
+                              ;Seg Limit 19:16 = 1011
+    db 0x92                   ;P = Segment present = 1 (is present in memory)
+                              ;DPL = Descriptor priviledge level = 00 (highest)
+                              ;S = Descriptor Type = 1 (code/data)
+                              ;TYPE = 0010 (Read/Write)
+    db 0x00                   ;Base 23:16 = 0
+    dw 0x0000                 ;Base 15:00 = 0
+    dw 0x00B8                 ;Seg Limit 15:00 = 10111000
 video equ $-gdt
-    dd 0,0                    ;(Noch) leerer Descriptor an Position 3
+    db 0x00                   ;Base 31:24 = 0
+    db 0xCB                   ;G = Granularity = 1 (in 4KB increments)
+                              ;D/B = Default operation size = 1 (32-bit)
+                              ;L = 64-bit code segment = 0
+                              ;AVL = Available for use by system software = 1
+                              ;(usable by system software)
+                              ;Seg Limit 19:16 = 1011
+    db 0x92                   ;P = Segment present = 1 (is present in memory)
+                              ;DPL = Descriptor priviledge level = 00 (highest)
+                              ;S = Descriptor Type = 1 (code/data)
+                              ;TYPE = 0010 (Read/Write)
+    db 0x0B                   ;Base 23:16 = 0B
+    dw 0x8000                 ;Base 15:00 = 80
+    dw 0x00B8                 ;Seg Limit 15:00 = 10111000
 gdt_end:
 
 ;</AUFGABE1>
