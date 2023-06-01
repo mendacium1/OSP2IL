@@ -24,7 +24,7 @@ start:
 ;verwendet werden.
 
     mov eax, cr0
-    or al, 1                  ;Setzen des PE (Protected Enable) bit in CR0
+    or eax, 1                 ;Setzen des PE (Protected Enable) bit in CR0
     mov cr0, eax
 
 ;</AUFGABE2>
@@ -42,11 +42,21 @@ protectedmode:
 ;ES-Register (Videosegment) benötigt. Der Stackpointer (ESP) wird sinnvoller-
 ;weise auf das Ende des Datensegments gesetzt.
 
-;INSERT CODE HERE
+    mov ax, data
+    mov ds, ax                    ; Setzen des DS-Registers auf data
+
+
+    ;mov ax, code                 ; Dachte zuerst data = code, schmeißt aber fault fehler
+    mov ss, ax                    ; Setzen des SS-Registers auf data (da code nicht funktioniert)
+
+    mov ax, video
+    mov es, ax
+
+    mov esp, 0xBFF                ; Set the stack pointer to the end of the data segment
 
 ;</AUFGABE3>
 
-    mov eax, protectedmsg     ;Erfolgsmeldung ausgeben
+    mov eax, protectedmsg         ;Erfolgsmeldung ausgeben
     call write32
 
 ;<AUFGABE5>
@@ -134,50 +144,50 @@ gdtr:
 gdt:
     dd 0,0                    ;Leerer Descriptor an Position 0
 code equ $-gdt
-    db 0x00                   ;Base 31:24 = 0
-    db 0xCB                   ;G = Granularity = 1 (in 4KB increments)
-                              ;D/B = Default operation size = 1 (32-bit)
-                              ;L = 64-bit code segment = 0
-                              ;AVL = Available for use by system software = 1
-                              ;(usable by system software)
-                              ;Seg Limit 19:16 = 1011
-    db 0x98                   ;P = Segment present = 1 (is present in memory)
-                              ;DPL = Descriptor priviledge level = 00 (highest)
-                              ;S = Descriptor Type = 1 (code/data)
-                              ;TYPE = 1000 (Execute-Only)
-    db 0x00                   ;Base 23:16 = 0
-    dw 0x0000                   ;Base 15:00 = 0
-    dw 0x00B8                   ;Seg Limit 15:00 = 10111000
-data equ $-gdt
-    db 0x00                   ;Base 31:24 = 0
-    db 0xCB                   ;G = Granularity = 1 (in 4KB increments)
-                              ;D/B = Default operation size = 1 (32-bit)
-                              ;L = 64-bit code segment = 0
-                              ;AVL = Available for use by system software = 1
-                              ;(usable by system software)
-                              ;Seg Limit 19:16 = 1011
-    db 0x92                   ;P = Segment present = 1 (is present in memory)
-                              ;DPL = Descriptor priviledge level = 00 (highest)
-                              ;S = Descriptor Type = 1 (code/data)
-                              ;TYPE = 0010 (Read/Write)
-    db 0x00                   ;Base 23:16 = 0
+    dw 0x0BFF                 ;Seg Limit 15:00 = 10111000
     dw 0x0000                 ;Base 15:00 = 0
-    dw 0x00B8                 ;Seg Limit 15:00 = 10111000
-video equ $-gdt
-    db 0x00                   ;Base 31:24 = 0
-    db 0xCB                   ;G = Granularity = 1 (in 4KB increments)
+    db 0x00                   ;Base 23:16 = 0
+    db 0x9A                   ;P = Segment present = 1 (is present in memory)
+                              ;DPL = Descriptor priviledge level = 00 (highest)
+                              ;S = Descriptor Type = 1 (code/data)
+                              ;TYPE = 1010 (Execute/Read)
+    db 0xC0                   ;G = Granularity = 1 (in 4KB increments)
                               ;D/B = Default operation size = 1 (32-bit)
                               ;L = 64-bit code segment = 0
-                              ;AVL = Available for use by system software = 1
+                              ;AVL = Available for use by system software = 0
                               ;(usable by system software)
                               ;Seg Limit 19:16 = 1011
+    db 0x00                   ;Base 31:24 = 0
+data equ $-gdt
+    dw 0x0BFF                 ;Seg Limit 15:00 = 10111000
+    dw 0x0000                 ;Base 15:00 = 0
+    db 0x00                   ;Base 23:16 = 0
     db 0x92                   ;P = Segment present = 1 (is present in memory)
                               ;DPL = Descriptor priviledge level = 00 (highest)
                               ;S = Descriptor Type = 1 (code/data)
                               ;TYPE = 0010 (Read/Write)
-    db 0x0B                   ;Base 23:16 = 0B
+    db 0xC0                   ;G = Granularity = 1 (in 4KB increments)
+                              ;D/B = Default operation size = 1 (32-bit)
+                              ;L = 64-bit code segment = 0
+                              ;AVL = Available for use by system software = 0
+                              ;(usable by system software)
+                              ;Seg Limit 19:16 = 1011
+    db 0x00                   ;Base 31:24 = 0
+video equ $-gdt
+    dw 0x7CFF                 ;Seg Limit 15:00 = 0000 0001
     dw 0x8000                 ;Base 15:00 = 80
-    dw 0x00B8                 ;Seg Limit 15:00 = 10111000
+    db 0x0B                   ;Base 23:16 = 0B
+    db 0x92                   ;P = Segment present = 1 (is present in memory)
+                              ;DPL = Descriptor priviledge level = 00 (highest)
+                              ;S = Descriptor Type = 1 (code/data)
+                              ;TYPE = 0010 (Read/Write)
+    db 0x40                   ;G = Granularity = 0 (bytewise increments)
+                              ;D/B = Default operation size = 1 (32-bit)
+                              ;L = 64-bit code segment = 0
+                              ;AVL = Available for use by system software = 0
+                              ;(usable by system software)
+                              ;Seg Limit 19:16 = 1011
+    db 0x00                   ;Base 31:24 = 0
 gdt_end:
 
 ;</AUFGABE1>
