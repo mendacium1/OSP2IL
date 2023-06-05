@@ -62,7 +62,8 @@ protectedmode:
 ;<AUFGABE5>
 ;Testen Interrupt 1. Zuvor muss die IDT analog zur GDT mit lidt geladen werden.
 
-;INSERT CODE HERE
+    lidt [idtr]
+    int 0x1
 
 ;</AUFGABE5>
 
@@ -73,9 +74,9 @@ protectedmode:
 ;Interrupt 2 so dass der Interrupthandler von dieser Adresse gestartet wird.
 ;Rufe anschließend Interrupt 2 auf.
 
-;    call startpaging
+    call startpaging
 
-;INSERT CODE HERE
+    ;int 2
 
 ;</AUFGABE 7>
 
@@ -85,41 +86,74 @@ endloop:                      ;Endlosschleife
 ;<AUFGABE 6>
 ;Analysiere folgenden Code. Was passiert hier? Nutzen die Erkenntnisse in
 ; AUFGABE 7
+
+;Folgender Code aktiviert paging. Paging wird für das memory management verwendet und übersetzt
+;virutelle adressen in physikalische Adressen
 startpaging:
-pagedir equ 0x80000
-pagetab equ 0x81000
-tabsize equ 0x400
+pagedir equ 0x80000           ;Setzen der Konstanten pagedir als Startadresse für das page-
+                              ;Directory
+pagetab equ 0x81000           ;Setzen der Konstanten pagetab als Startadresse für den page-
+                              ;Table
+tabsize equ 0x400             ;Setzen der Konstante tabsize als Größe für Page-Directory und Page-
+                              ;Table. (1024Bit = 0x400)
 
     mov ebx,tabsize           ;Zero PageDirectory
-zeropagedir:
-    dec ebx
-    mov dword [ebx*4+pagedir],0
-    cmp ebx,0
-    jne zeropagedir
-    mov eax,pagetab
-    or  eax,3
-    mov dword [pagedir],eax
-    mov dword [pagedir+8],eax
+                              ;Initialisieren eines loop-counters über das ebx-Register
+
+;Unter diesem label werden Page-Directory Einträge initialisiert
+zeropagedir:                  ;Beginn der loop welche das Page-Directory leert/initialisiert
+    dec ebx                   ;Dekrementieren des ebx-Rigisters um 1
+    mov dword [ebx*4+pagedir],;Jeden Eintrag des Page-Directory auf 0 setzen
+    cmp ebx,0                 ;Checken ob ebx den Wert 0 hat
+    jne zeropagedir           ;Ist die vorherige Bedingung falsch, so wird wieder zum zeropagedir
+                              ;label gesprungen, dies wiederholt sich solange bis ebx den Wert 0
+                              ;hat.
+    mov eax,pagetab           ;Hier wird der Wert aus pagetab in das eax-Register geschrieben.
+    or  eax,3                 ;Hier werden die 2 "niedrigsten" Bit auf 1 gesetzt (bitwise OR with
+                              ;11)
+    mov dword [pagedir],eax   ;Kopieren des Wertes im eax-Register an die Adressen von pagedir. 
+                              ;Dies setzt den ersten Eintrag des Page-Directory auf den Wert von
+                              ;pagetab und aktiviert das "present" und "read/write" flag.
+    mov dword [pagedir+8],eax ;Ähnlich zu dem Befehl zuvor wird hier nun ein zweiter Eintrag
+                              ;gemacht.
 
     mov ebx,tabsize           ;Map PDE1 (virt = phys)
+                              ;Neu setzen des ebx-Registers mit tabsize, damit dieses Register
+                              ;wieder als loop-Counter verwendet werden kann.
+
+;Unter diesem label wird der page-Table beschrieben
 fillpagetable:
-    dec ebx
-    mov eax, ebx
-    shl eax,12
-    or  eax,3
+    dec ebx                   ;Dekrementieren des ebx-Registers um 1
+    mov eax, ebx              ;Derzeitigen Wert des ebx-Registers in das eax-Register schreiben.
+    shl eax,12                ;Verschieben des Wertes im eax-Register um 12 bit nach links. Dies
+                              ;ist equivalent zu einer multiplikation mit 4096 und konvertiert
+                              ;die Adresse in eine physikale Adresse
+    or  eax,3                 ;Gleich wie zuvor werden hier die 2 "niedrigsten" Bits auf 11 gesetzt
+                              ;mit Hilfe einer Bit-weisen OR-Operation
     mov dword [ebx*4+pagetab],eax
-    cmp ebx,0
-    jne fillpagetable
+                              ;Kopieren des eax-Registers in den Adressbereich durch multiplizieren
+                              ;des ebx-Registers mit 4 und hinzufügen von pagetab. Dies setzt jeden
+                              ;Eintrag mit einer physikalischen Adressen und aktiviert das wieder
+                              ;das "present" und das "read/write" flag
+    cmp ebx,0                 ;Gleich wie zuvor wird das ebx-Register mit 0 verglichen
+    jne fillpagetable         ;Ist die vorherige Bedingung falsch wird zum label "fillpagetable"
+                              ;gesprungen (loop bis ebx == 0)
 
     mov eax,pagedir           ;PDE -> CR3
-    mov cr3,eax
-
-    pop ebx
+                              ;Kopieren des Wertes aus pagedir in das eax-Register
+    mov cr3,eax               ;Kopieren des Wertes aus dem eax-Register in das cr3-Register
+                              ;(cr3 - Control Register 3). Dies setzt die physikalische Adresse des
+                              ;Page-Directory
+    pop ebx                   ;Wiederherstellen des ursprünglichen Wertes im ebx-Register über den
+                              ;Stack.
     mov eax,cr0               ;Set PG-Bit
-    or eax,0x80000000
-    mov cr0,eax
-    push ebx
-    retn
+                              ;Kopieren des Wertes aus dem cr0-Register in das eax-Register
+    or eax,0x80000000         ;Bit-weise OR-Operation mit dem eax-Register und dem Wert
+                              ;0x80000000. Dies ist das Bit für "paging-enabled" im cr0-Register
+    mov cr0,eax               ;Kopieren des Wertes aus dem eax-Register in das cr0-Register. Nun
+                              ;ist das "paging-enabled"-Bit im cr0-Register gesetzt.
+    push ebx                  ;Den Wert aus dem ebx-Register auf den Stack pushen
+    retn                      ;Verlässt die Funktion
 ;</AUFGABE6>
 
 ;<AUFGABE1>
@@ -208,9 +242,21 @@ idtr:
 idt:
     dd 0,0                    ;Leerer Descriptor an Position 0
 
-    dd 0,0                    ;(Noch) leerer Descriptor an Position 1
+    dw interrupthandler1      ;Interrupthandler1 - Offset
+    dw code                   ;code - Segment Selector = 0
+    db 0x0
+    db 10001111b              ;P = Segment Present flag = 1
+                              ;DPL = Descriptor Privilege Level = 00 (highest)
+                              ;D = Size of gate = 1 (32 bits)
+    dw 0x0                    ;Offset 31:16 = 0
 
-    dd 0,0                    ;(Noch) leerer Descriptor an Position 2
+    dw interrupthandler2      ;Interrupthandler1 - Offset
+    dw code                   ;code - Segment Selector = 0
+    db 0x0                    ;Vorgegebene bits (reserved einfach 0)
+    db 10001111b              ;P = Segment Present flag = 1
+                              ;DPL = Descriptor Privilege Level = 00 (highest)
+                              ;D = Size of gate = 1 (32 bits)
+    dw 0x0                    ;Offset 31:16 = 0
 idt_end:
 
 ;</AUFGABE4>
