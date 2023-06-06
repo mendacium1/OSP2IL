@@ -75,8 +75,10 @@ protectedmode:
 ;Rufe anschließend Interrupt 2 auf.
 
     call startpaging
-
-    ;int 2
+    mov eax, pagetable
+    add eax, interrupthandler2;Zusammenaddieren der pagetable-Adresse mit der des interrupthandler2
+    mov dword [idt+0x8], eax  ;neuen offset in interrupthandler2 setzen
+    int 2
 
 ;</AUFGABE 7>
 
