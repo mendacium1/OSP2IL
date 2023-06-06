@@ -75,10 +75,10 @@ protectedmode:
 ;Rufe anschließend Interrupt 2 auf.
 
     call startpaging
-    mov eax, pagetable
+    mov eax, pagetab
     add eax, interrupthandler2;Zusammenaddieren der pagetable-Adresse mit der des interrupthandler2
     mov dword [idt+0x8], eax  ;neuen offset in interrupthandler2 setzen
-    int 2
+    int 0x2
 
 ;</AUFGABE 7>
 
@@ -105,7 +105,7 @@ tabsize equ 0x400             ;Setzen der Konstante tabsize als Größe für Pag
 ;Unter diesem label werden Page-Directory Einträge initialisiert
 zeropagedir:                  ;Beginn der loop welche das Page-Directory leert/initialisiert
     dec ebx                   ;Dekrementieren des ebx-Rigisters um 1
-    mov dword [ebx*4+pagedir],;Jeden Eintrag des Page-Directory auf 0 setzen
+    mov dword [ebx*4+pagedir],0;Jeden Eintrag des Page-Directory auf 0 setzen
     cmp ebx,0                 ;Checken ob ebx den Wert 0 hat
     jne zeropagedir           ;Ist die vorherige Bedingung falsch, so wird wieder zum zeropagedir
                               ;label gesprungen, dies wiederholt sich solange bis ebx den Wert 0
