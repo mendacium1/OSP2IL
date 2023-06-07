@@ -75,9 +75,9 @@ protectedmode:
 ;Rufe anschließend Interrupt 2 auf.
 
     call startpaging
-    mov eax, pagetab
-    add eax, interrupthandler2;Zusammenaddieren der pagetable-Adresse mit der des interrupthandler2
-    mov dword [idt+0x8], eax  ;neuen offset in interrupthandler2 setzen
+    ;Da der IDT an dieser Stelle nicht beschrieben werden kann, habe ich dies bereits im
+    ;vorhinein unter Aufgabe 4 geändert. Meine Überlegung wäre folgende gewesen:
+    ;mov dword [idt+0xb0], 0x80 ;write offset 31-16
     int 0x2
 
 ;</AUFGABE 7>
@@ -258,7 +258,9 @@ idt:
     db 10001111b              ;P = Segment Present flag = 1
                               ;DPL = Descriptor Privilege Level = 00 (highest)
                               ;D = Size of gate = 1 (32 bits)
-    dw 0x0                    ;Offset 31:16 = 0
+    ;An dieser Stelle wird Aufgabe 7 berücksicht und die Offset Addresse auf den Bereich
+    ;im Paging gesetzt
+    dw 0x80                    ;Offset 31:16 = 0
 idt_end:
 
 ;</AUFGABE4>
