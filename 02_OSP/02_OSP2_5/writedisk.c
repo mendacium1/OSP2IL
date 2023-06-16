@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
         close(bootcode);
         bootsector[510] = (char)0x55;
         bootsector[511] = (char)0xaa;
-        floppy = open("/dev/fd0", O_RDWR);
+        floppy = open("/home/mendacium/fh/OSP2IL/02_OSP/02_OSP2_5/fd0", O_RDWR);
         if (floppy != -1) {
             lseek(floppy, (sector_number - 1) * 512, SEEK_SET);
             write(floppy, bootsector, 512);

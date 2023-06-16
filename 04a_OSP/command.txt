@@ -1,0 +1,1 @@
+qemu-system-x86_64 -drive format=raw,file=fd0 -chardev stdio,mux=on,id=char0 -mon chardev=char0,mode=readline -gdb dev -s
